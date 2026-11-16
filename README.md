@@ -40,6 +40,20 @@ Windows lander  →  UC Volume  →  nz_energy.bronze
                               →  AI/BI dashboard (later)
 ```
 
+Lakeflow graph after the first workspace run (Auto Loader CSV sources, then streaming tables and materialized views):
+
+```mermaid
+flowchart LR
+  nspCsv["Volume NSP CSV"] --> nspRaw["bronze.network_supply_points_raw"]
+  priceCsv["Volume prices CSV"] --> priceRaw["bronze.final_energy_prices_raw"]
+  nspRaw --> nspCur["silver.nsp_current"]
+  priceRaw --> prices["silver.prices"]
+  nspCur --> loc["silver.prices_with_location"]
+  prices --> loc
+  loc --> daily["gold.weekday_evening_node_prices"]
+  daily --> ranked["gold.evening_spike_ranked"]
+```
+
 | Path | Role |
 | --- | --- |
 | `src/land/` | Local EMI download (`download_emi.py`). Volume upload is still manual. |
@@ -99,6 +113,20 @@ v1 使用半小时粒度的 **FinalEnergyPrices**（最近 90 个日文件）和
                            →  nz_energy.silver   （类型、质量期望）
                            →  nz_energy.gold     （工作日晚高峰 KPI）
                            →  AI/BI 看板（后做）
+```
+
+第一次 workspace 跑通后的 Lakeflow 图（Auto Loader 读 CSV，再接 streaming table 与 materialized view）：
+
+```mermaid
+flowchart LR
+  nspCsv["Volume NSP CSV"] --> nspRaw["bronze.network_supply_points_raw"]
+  priceCsv["Volume prices CSV"] --> priceRaw["bronze.final_energy_prices_raw"]
+  nspRaw --> nspCur["silver.nsp_current"]
+  priceRaw --> prices["silver.prices"]
+  nspCur --> loc["silver.prices_with_location"]
+  prices --> loc
+  loc --> daily["gold.weekday_evening_node_prices"]
+  daily --> ranked["gold.evening_spike_ranked"]
 ```
 
 公开约定的 catalog / schema 是 `nz_energy.bronze|silver|gold`。个人 workspace 里带邮箱前缀的 catalog 只写未跟踪的 `AGENTS.local.md`。流水线 SQL 与在 workspace 里怎么建，见 `src/pipeline/README.md`。
