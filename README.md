@@ -4,7 +4,7 @@
 
 Personal Databricks data-engineering project: New Zealand wholesale electricity prices, landed on a laptop, stored as Delta in Unity Catalog, and shaped through a Bronze / Silver / Gold pipeline.
 
-**Status:** local EMI lander works (`src/land/download_emi.py`). Lakeflow SQL is in `src/pipeline/` and has not been run in the workspace yet. CSV cache stays in `data/landing/` and is gitignored.
+**Status:** local EMI lander works (`src/land/download_emi.py`). One Lakeflow pipeline in `src/pipeline/` has been run in the workspace (Bronze / Silver / Gold). Gold ranks were reviewed. CSV cache stays in `data/landing/` and is gitignored. AI/BI dashboard is next.
 
 ---
 
@@ -31,7 +31,7 @@ Data licence: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Attribu
 
 Raw CSVs are not committed. See `data/landing/` (gitignored contents).
 
-### Planned layout
+### Layout
 
 ```text
 Windows lander  →  UC Volume  →  nz_energy.bronze
@@ -43,14 +43,14 @@ Windows lander  →  UC Volume  →  nz_energy.bronze
 | Path | Role |
 | --- | --- |
 | `src/land/` | Local EMI download (`download_emi.py`). Volume upload is still manual. |
-| `src/pipeline/` | Lakeflow / Spark Declarative Pipelines SQL (`01_bronze.sql` → `03_gold.sql`). Create the pipeline in the workspace; see `src/pipeline/README.md`. |
+| `src/pipeline/` | Lakeflow / Spark Declarative Pipelines SQL (`01_bronze.sql` → `03_gold.sql`). Workspace run notes: `src/pipeline/README.md`. |
 | `resources/` | Declarative Automation Bundles YAML (later) |
 | `docs/` | Architecture notes and dashboard screenshots (later) |
 | `data/landing/` | Local CSV cache (ignored) |
 
 Catalog/schema names above are the public contract. A personal workspace catalog belongs in untracked `AGENTS.local.md`.
 
-v1 Gold grain: weekday date × node, evening mean (TradingPeriod ≥ 35, 17:00 NZ) versus daytime mean (TP 15–34). Ranked node table is `nz_energy.gold.evening_spike_ranked`. Do not treat ranks as published insights until a run has been reviewed.
+v1 Gold grain: weekday date × node, evening mean (TradingPeriod ≥ 35, 17:00 NZ) versus daytime mean (TP 15–34). Ranked node table is `nz_energy.gold.evening_spike_ranked`. A first run has been reviewed; node-level findings stay in that table until a dashboard screenshot is added.
 
 ### Development
 
@@ -69,7 +69,7 @@ This repo is original portfolio work. It is not a copy of Databricks Academy not
 
 个人 Databricks 数据工程项目：新西兰电力批发市场结算电价。CSV 在本机落地，写入 Unity Catalog 的 Delta 表，再走 Bronze / Silver / Gold。
 
-**当前状态：** 本机 EMI 下载脚本已可跑（`src/land/download_emi.py`）。Lakeflow SQL 在 `src/pipeline/`，尚未在 workspace 里跑过。CSV 缓存在 `data/landing/`，不进 git。
+**当前状态：** 本机 EMI 下载脚本已可跑（`src/land/download_emi.py`）。`src/pipeline/` 里那条 Lakeflow 已在 workspace 跑通（Bronze / Silver / Gold），Gold 名次已核对。CSV 缓存在 `data/landing/`，不进 git。下一步是 AI/BI 看板。
 
 ### 问题
 
@@ -92,7 +92,7 @@ v1 使用半小时粒度的 **FinalEnergyPrices**（最近 90 个日文件）和
 
 原始 CSV 不进 git，见 `data/landing/`（内容已忽略）。
 
-### 计划中的流向
+### 流向
 
 ```text
 本机 lander  →  UC Volume  →  nz_energy.bronze
@@ -103,7 +103,7 @@ v1 使用半小时粒度的 **FinalEnergyPrices**（最近 90 个日文件）和
 
 公开约定的 catalog / schema 是 `nz_energy.bronze|silver|gold`。个人 workspace 里带邮箱前缀的 catalog 只写未跟踪的 `AGENTS.local.md`。流水线 SQL 与在 workspace 里怎么建，见 `src/pipeline/README.md`。
 
-v1 Gold 粒度：工作日日期 × 节点；晚间均价（TradingPeriod ≥ 35，17:00）对比日间均价（TP 15–34）。排序表是 `nz_energy.gold.evening_spike_ranked`。跑通并核对前，不要把名次写成结论。
+v1 Gold 粒度：工作日日期 × 节点；晚间均价（TradingPeriod ≥ 35，17:00）对比日间均价（TP 15–34）。排序表是 `nz_energy.gold.evening_spike_ranked`。第一轮已经核对；节点级结论留在表里，等看板截图再写进 README。
 
 ### 开发说明
 
