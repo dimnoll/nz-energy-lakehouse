@@ -1,0 +1,28 @@
+# Local machine overrides (Python path, workspace URL, personal catalog)
+AGENTS.local.md
+
+# Landed EMI CSVs — download locally, upload to a Unity Catalog Volume
+data/landing/*
+!data/landing/.gitkeep
+data/raw/*
+!data/raw/.gitkeep
+
+# Secrets and Databricks CLI caches
+.env
+.env.*
+!.env.example
+.databricks/
+
+# Editor / agent noise
+.cursor/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Windows
+Thumbs.db
+Desktop.ini
