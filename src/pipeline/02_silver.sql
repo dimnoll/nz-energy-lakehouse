@@ -27,21 +27,21 @@ WITH latest_file AS (
 ),
 current_rows AS (
   SELECT
-    raw.`POC code` AS point_of_connection,
-    raw.Island AS island,
-    raw.`Network reporting region` AS network_reporting_region,
-    CAST(raw.`NZTM easting` AS DOUBLE) AS nztm_easting,
-    CAST(raw.`NZTM northing` AS DOUBLE) AS nztm_northing,
-    raw.Description AS description,
-    raw.NSP AS nsp_code,
-    to_date(raw.`Start date`) AS start_date,
+    raw.poc_code AS point_of_connection,
+    raw.island,
+    raw.network_reporting_region,
+    CAST(raw.nztm_easting AS DOUBLE) AS nztm_easting,
+    CAST(raw.nztm_northing AS DOUBLE) AS nztm_northing,
+    raw.description,
+    raw.nsp AS nsp_code,
+    to_date(raw.start_date) AS start_date,
     raw._source_file
   FROM nz_energy.bronze.network_supply_points_raw raw
   INNER JOIN latest_file
     ON raw._source_file_name = latest_file._source_file_name
-  WHERE CAST(raw.`Current flag` AS INT) = 1
-    AND raw.`POC code` IS NOT NULL
-    AND raw.`POC code` <> ''
+  WHERE CAST(raw.current_flag AS INT) = 1
+    AND raw.poc_code IS NOT NULL
+    AND raw.poc_code <> ''
 ),
 ranked AS (
   SELECT
