@@ -25,19 +25,22 @@ Catalog `nz_energy` already exists. The first pipeline update can create `silver
 ### Link one Git folder, then one pipeline
 
 1. In **Workspace** (your user home), **Create → Git folder** once. Clone this GitHub repo onto `main`. Do **not** clone a second copy inside the pipeline project folder.
-2. **New → ETL pipeline** (or **Jobs & Pipelines → Create → ETL pipeline**). Serverless, **triggered**. Default catalog `nz_energy`.
-3. **Source code** must be this folder in that Git folder:
+2. After a GitHub push: open the Git folder → click the **branch + main** pill to the right of the folder name → **Pull** in the dialog.
+3. **New → ETL pipeline** (or **Jobs & Pipelines → Create → ETL pipeline**). Serverless, **triggered**. Default catalog `nz_energy`.
+4. **Source code** must be **only** this folder in that Git folder:
 
    `/Workspace/Users/<you>/nz-energy-lakehouse/src/pipeline/**`
 
-   The empty `transformations/` folder that the editor creates is not the source. Do not paste these `CREATE` statements into a SQL warehouse: that makes a hidden standalone pipeline per table and will collide with this one.
-4. If `nz_energy.bronze.final_energy_prices_raw` already exists from a SQL-editor run, drop it first so this pipeline can own it:
+   Remove the editor’s `transformations/**` glob if it is still listed. Pipeline source may contain `CREATE OR REFRESH STREAMING TABLE`, `CREATE OR REFRESH MATERIALIZED VIEW`, and `SET` only — not `DROP`.
+5. If `nz_energy.bronze.final_energy_prices_raw` already exists from a SQL-editor run, drop it in **SQL Editor** (left sidebar, a SQL warehouse), **not** in the pipeline:
 
 ```sql
 DROP TABLE IF EXISTS nz_energy.bronze.final_energy_prices_raw;
 ```
 
-5. **Run** once. Then:
+   Then delete any extra file you added under the pipeline’s `transformations/` folder.
+
+6. **Run** the ETL pipeline once. Then:
 
 ```sql
 SELECT * FROM nz_energy.gold.evening_spike_ranked ORDER BY spike_rank LIMIT 20;
@@ -58,18 +61,21 @@ catalog `nz_energy` 已有。第一次跑 pipeline 时，若不存在会尝试�
 ### 一个 Git folder，一条 pipeline
 
 1. 在 **Workspace** 自己的用户目录 **Create → Git folder**，只克隆一次本仓库的 `main`。不要在 pipeline 工程文件夹里再克隆一份。
-2. **New → ETL pipeline**（或 **Jobs & Pipelines → Create → ETL pipeline**）。Serverless、**triggered**。默认 catalog：`nz_energy`。
-3. **Source code** 指向 Git folder 里的本目录：
+2. GitHub 推送之后：打开该 Git folder → 点文件夹名右侧的 **分支 + main** 矩形 → 对话框右上 **Pull**。
+3. **New → ETL pipeline**（或 **Jobs & Pipelines → Create → ETL pipeline**）。Serverless、**triggered**。默认 catalog：`nz_energy`。
+4. **Source code** 只保留 Git folder 里的本目录：
 
    `/Workspace/Users/<你>/nz-energy-lakehouse/src/pipeline/**`
 
-   编辑器自带的空 `transformations/` 不是源。不要把这些 `CREATE` 贴进 SQL warehouse 去跑：那样每个表会变成一条隐藏的 standalone pipeline，和这条 ETL pipeline 抢所有权。
-4. 若 SQL 编辑器已经建过 `nz_energy.bronze.final_energy_prices_raw`，先删掉再跑这条 pipeline：
+   若还挂着编辑器自带的 `transformations/**`，去掉。Pipeline 源只能写 `CREATE OR REFRESH STREAMING TABLE` / `MATERIALIZED VIEW` / `SET`，不能写 `DROP`。
+5. 若 SQL 编辑器已经建过 `nz_energy.bronze.final_energy_prices_raw`，在左侧 **SQL Editor**（选一个 SQL warehouse）里删，**不要**写进 pipeline：
 
 ```sql
 DROP TABLE IF EXISTS nz_energy.bronze.final_energy_prices_raw;
 ```
 
-5. **Run** 一次。再用 SQL 看 Gold。
+   然后删掉 pipeline 的 `transformations/` 下多出来的文件。
+
+6. 再 **Run** 这条 ETL pipeline。再用 SQL 看 Gold。
 
 Gold 只用 final 文件。晚间是 TP ≥ 35（17:00）；日间基线是 TP 15–34（07:00–16:30），不含凌晨。
