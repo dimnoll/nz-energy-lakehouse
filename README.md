@@ -4,7 +4,7 @@
 
 Personal Databricks data-engineering project: New Zealand wholesale electricity prices, landed on a laptop, stored as Delta in Unity Catalog, and shaped through a Bronze / Silver / Gold pipeline.
 
-**Status:** repository skeleton. No landing script or Lakeflow pipeline yet.
+**Status:** local EMI lander works (`src/land/download_emi.py`). Lakeflow pipeline not started. CSV cache stays in `data/landing/` and is gitignored.
 
 ---
 
@@ -42,7 +42,7 @@ Windows lander  →  UC Volume  →  nz_energy.bronze
 
 | Path | Role |
 | --- | --- |
-| `src/land/` | Local download + Volume upload (not started) |
+| `src/land/` | Local EMI download (`download_emi.py`). Volume upload is still manual. |
 | `src/pipeline/` | Lakeflow / Spark Declarative Pipelines (not started) |
 | `resources/` | Declarative Automation Bundles YAML (later) |
 | `docs/` | Architecture notes and dashboard screenshots (later) |
@@ -67,7 +67,7 @@ This repo is original portfolio work. It is not a copy of Databricks Academy not
 
 个人 Databricks 数据工程项目：新西兰电力批发市场结算电价。CSV 在本机落地，写入 Unity Catalog 的 Delta 表，再走 Bronze / Silver / Gold。
 
-**当前状态：** 仅仓库骨架。landing 脚本和 Lakeflow 流水线尚未开始。
+**当前状态：** 本机 EMI 下载脚本已可跑（`src/land/download_emi.py`）。Lakeflow 流水线尚未开始。CSV 缓存在 `data/landing/`，不进 git。
 
 ### 问题
 
