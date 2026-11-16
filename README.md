@@ -54,12 +54,16 @@ flowchart LR
   daily --> ranked["gold.evening_spike_ranked"]
 ```
 
+Workspace DAG after the first successful run:
+
+![Lakeflow pipeline DAG after the first successful workspace run](docs/lakeflow-pipeline-dag.png)
+
 | Path | Role |
 | --- | --- |
 | `src/land/` | Local EMI download (`download_emi.py`). Volume upload is still manual. |
 | `src/pipeline/` | Lakeflow / Spark Declarative Pipelines SQL (`01_bronze.sql` → `03_gold.sql`). Workspace run notes: `src/pipeline/README.md`. |
 | `resources/` | Declarative Automation Bundles YAML (later) |
-| `docs/` | Architecture notes and dashboard screenshots (later) |
+| `docs/` | Pipeline DAG screenshot; dashboard screenshots later |
 | `data/landing/` | Local CSV cache (ignored) |
 
 Catalog/schema names above are the public contract. A personal workspace catalog belongs in untracked `AGENTS.local.md`.
@@ -128,6 +132,10 @@ flowchart LR
   loc --> daily["gold.weekday_evening_node_prices"]
   daily --> ranked["gold.evening_spike_ranked"]
 ```
+
+第一次成功跑通后的 workspace DAG：
+
+![第一次成功跑通后的 Lakeflow pipeline DAG](docs/lakeflow-pipeline-dag.png)
 
 公开约定的 catalog / schema 是 `nz_energy.bronze|silver|gold`。个人 workspace 里带邮箱前缀的 catalog 只写未跟踪的 `AGENTS.local.md`。流水线 SQL 与在 workspace 里怎么建，见 `src/pipeline/README.md`。
 
