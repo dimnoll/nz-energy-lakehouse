@@ -37,7 +37,8 @@ LICENSE            # 代码 MIT
 |----|-----|
 | 问题 | 工作日 NZ 时间 17:00 之后，哪些节点 final energy price 尖峰 |
 | v1 数据 | `FinalEnergyPrices` 最近 90 个**日**文件 + 当前 `NetworkSupplyPointsTable` |
-| 增量 | 日文件；同一天 interim（`_I`）让位给 final |
+| 发电切片 | `Generation_MD` 与价格窗口重叠的**月**文件；另写问题，不并进 `evening_spike_ranked` |
+| 增量 | 日文件；同一天 interim（`_I`）让位给 final。发电月文件本身会滞后 |
 | 落地 | **本机下载** → UC Volume。Free Edition 出网有白名单，禁止集群直拉 blob/API |
 | UC 公开名 | `nz_energy.bronze` / `nz_energy.silver` / `nz_energy.gold` |
 | 数据许可 | EMI CC BY 4.0；署名 `www.emi.ea.govt.nz provided by the Electricity Authority (New Zealand)` |

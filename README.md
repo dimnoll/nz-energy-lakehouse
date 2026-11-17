@@ -4,7 +4,7 @@
 
 Personal Databricks data-engineering project: New Zealand wholesale electricity prices, landed on a laptop, stored as Delta in Unity Catalog, and shaped through a Bronze / Silver / Gold pipeline.
 
-**Status:** local EMI lander works (`src/land/download_emi.py`). One Lakeflow pipeline in `src/pipeline/` has been run (Bronze / Silver / Gold). Lakeflow Job `EMI daily refresh` triggers that pipeline on a daily Auckland schedule. An AI/BI dashboard reads the Gold tables. A Declarative Automation Bundle (`databricks.yml`) describes that pipeline and Job for `databricks bundle validate`; it is not auto-deployed. CSV cache stays in `data/landing/` and is gitignored.
+**Status:** local EMI lander works (`src/land/download_emi.py`), including monthly `Generation_MD` files that overlap the price window. One Lakeflow pipeline in `src/pipeline/` has been run for prices (Bronze / Silver / Gold); generation tables are in `04_generation.sql` and still need the Volume upload + a rerun of **that same** pipeline. Lakeflow Job `EMI daily refresh` triggers it on a daily Auckland schedule. An AI/BI dashboard reads the price Gold tables (generation charts are not on that page). A Declarative Automation Bundle (`databricks.yml`) describes that pipeline and Job for `databricks bundle validate`; it is not auto-deployed. CSV cache stays in `data/landing/` and is gitignored.
 
 ---
 
@@ -14,7 +14,9 @@ Personal Databricks data-engineering project: New Zealand wholesale electricity 
 
 On weekdays, which grid nodes spike in **final energy price** after 17:00 NZ time?
 
-v1 uses half-hour **FinalEnergyPrices** (last 90 daily files) plus the **NetworkSupplyPoints** dimension. Generation mix is out of scope until a later slice.
+A second question, same evening window: does **national generation mix** (EMI `Fuel_Code`, kWh) shift after 17:00 versus daytime? That is a separate Gold table, not a column on the node ranking.
+
+v1 prices use half-hour **FinalEnergyPrices** (last 90 daily files) plus the **NetworkSupplyPoints** dimension. Generation uses monthly **Generation_MD** files that overlap that window (they lag the daily prices).
 
 ### Data
 
@@ -22,6 +24,7 @@ v1 uses half-hour **FinalEnergyPrices** (last 90 daily files) plus the **Network
 | --- | --- | --- |
 | [Final energy prices](https://www.ea.govt.nz/data-and-insights/datasets/wholesale/dispatch-and-pricing/final-energy-prices/) | node × trading period × day | last 90 daily CSVs (~300 KB each) |
 | Network supply points (`MappingsAndGeospatial/NetworkSupplyPointsTable`) | point of connection | current snapshot |
+| [Generation by plant](https://www.emi.ea.govt.nz/Wholesale/Datasets/Generation/Generation_MD) (`Generation_MD`) | plant × day × TP1–TP50 (kWh, wide) | monthly CSVs overlapping the price window |
 
 Files come from the Electricity Authority EMI Azure blob (`emidatasets.blob.core.windows.net/publicdata`). Download on Windows; **do not** fetch from Databricks Free Edition compute (outbound access is allowlisted). Upload into a Unity Catalog Volume, then run the pipeline.
 
@@ -41,18 +44,21 @@ Windows lander  →  UC Volume  →  nz_energy.bronze
 Lakeflow Job `EMI daily refresh`  (daily 07:00 Pacific/Auckland; does not fetch EMI)
 ```
 
-Lakeflow graph after the first workspace run (Auto Loader CSV sources, then streaming tables and materialized views):
+Lakeflow graph (Auto Loader CSV sources, then streaming tables and materialized views). The workspace DAG screenshot below is from the first successful prices-only run; generation tables join after the Volume upload.
 
 ```mermaid
 flowchart LR
   nspCsv["Volume NSP CSV"] --> nspRaw["bronze.network_supply_points_raw"]
   priceCsv["Volume prices CSV"] --> priceRaw["bronze.final_energy_prices_raw"]
+  genCsv["Volume Generation_MD CSV"] --> genRaw["bronze.generation_md_raw"]
   nspRaw --> nspCur["silver.nsp_current"]
   priceRaw --> prices["silver.prices"]
   nspCur --> loc["silver.prices_with_location"]
   prices --> loc
   loc --> daily["gold.weekday_evening_node_prices"]
   daily --> ranked["gold.evening_spike_ranked"]
+  genRaw --> genPer["silver.generation_periods"]
+  genPer --> fuelMix["gold.weekday_evening_fuel_mix"]
 ```
 
 Workspace DAG after the first successful run:
@@ -70,7 +76,7 @@ AI/BI page `Weekday evening spikes`: top 20 nodes by mean evening/daytime ratio,
 | Path | Role |
 | --- | --- |
 | `src/land/` | Local EMI download (`download_emi.py`). Volume upload is still manual. |
-| `src/pipeline/` | Lakeflow / Spark Declarative Pipelines SQL (`01_bronze.sql` → `03_gold.sql`). Workspace run notes: `src/pipeline/README.md`. |
+| `src/pipeline/` | Lakeflow / Spark Declarative Pipelines SQL (`01_bronze.sql` → `04_generation.sql`). Workspace run notes: `src/pipeline/README.md`. |
 | `databricks.yml` | Bundle identity and the single `workspace` target. Host/token stay in the local CLI profile. |
 | `resources/` | Pipeline and Job YAML (`emi_lakeflow.pipeline.yml`, `emi_daily_refresh.job.yml`). |
 | `docs/` | Pipeline DAG, Job run, and AI/BI dashboard screenshots |
@@ -79,6 +85,8 @@ AI/BI page `Weekday evening spikes`: top 20 nodes by mean evening/daytime ratio,
 Catalog/schema names above are the public contract. A personal workspace catalog belongs in untracked `AGENTS.local.md`.
 
 v1 Gold grain: weekday date × node, evening mean (TradingPeriod ≥ 35, 17:00 NZ) versus daytime mean (TP 15–34). Ranked node table is `nz_energy.gold.evening_spike_ranked`. The dashboard uses that rank plus the daily series for a Waitaki node (`WTK0111`).
+
+Generation Gold grain: weekday date × EMI `Fuel_Code`, evening kWh share versus daytime share. Table: `nz_energy.gold.weekday_evening_fuel_mix`. Codes such as `Hydro` and `HYD` are left as EMI labelled them.
 
 ### Development
 
@@ -99,13 +107,15 @@ This repo is original portfolio work. It is not a copy of Databricks Academy not
 
 个人 Databricks 数据工程项目：新西兰电力批发市场结算电价。CSV 在本机落地，写入 Unity Catalog 的 Delta 表，再走 Bronze / Silver / Gold。
 
-**当前状态：** 本机 EMI 下载脚本已可跑（`src/land/download_emi.py`）。`src/pipeline/` 里那条 Lakeflow 已跑通（Bronze / Silver / Gold）。Lakeflow Job `EMI daily refresh` 按奥克兰时间每天触发这条 pipeline。AI/BI 看板读 Gold 表。根目录 `databricks.yml` 用 Declarative Automation Bundles 描述这条 pipeline 和 Job，供 `databricks bundle validate`；不会一 push 就部署。CSV 缓存在 `data/landing/`，不进 git。
+**当前状态：** 本机 EMI 下载脚本已可跑（`src/land/download_emi.py`），也包括与价格窗口重叠的 `Generation_MD` 月文件。`src/pipeline/` 里那条 Lakeflow 已跑通价格的 Bronze / Silver / Gold；发电表在 `04_generation.sql`，还要把 Volume 上传后再 **Run 同一条** pipeline。Lakeflow Job `EMI daily refresh` 按奥克兰时间每天触发。AI/BI 看板读价格 Gold（发电图不在那一页）。根目录 `databricks.yml` 用 Declarative Automation Bundles 描述这条 pipeline 和 Job，供 `databricks bundle validate`；不会一 push 就部署。CSV 缓存在 `data/landing/`，不进 git。
 
 ### 问题
 
 工作日、新西兰时间 **17:00 之后**，哪些节点的 **final energy price** 出现尖峰？
 
-v1 使用半小时粒度的 **FinalEnergyPrices**（最近 90 个日文件）和 **NetworkSupplyPoints** 维度表。发电结构留到后续切片。
+同一晚间窗口的第二句：全国 **发电结构**（EMI `Fuel_Code`，kWh）相对日间有没有变？这是另一张 Gold 表，不是节点排名上的一列。
+
+v1 价格用半小时 **FinalEnergyPrices**（最近 90 个日文件）和 **NetworkSupplyPoints**。发电用与该窗口重叠的 **Generation_MD** 月文件（比日价格滞后）。
 
 ### 数据
 
@@ -113,6 +123,7 @@ v1 使用半小时粒度的 **FinalEnergyPrices**（最近 90 个日文件）和
 | --- | --- | --- |
 | [Final energy prices](https://www.ea.govt.nz/data-and-insights/datasets/wholesale/dispatch-and-pricing/final-energy-prices/) | 节点 × 交易时段 × 日 | 最近 90 个日 CSV（每个约 300 KB） |
 | 供电点表（`MappingsAndGeospatial/NetworkSupplyPointsTable`） | 并网点 | 当前一份快照 |
+| [分厂发电量](https://www.emi.ea.govt.nz/Wholesale/Datasets/Generation/Generation_MD)（`Generation_MD`） | 电厂 × 日 × TP1–TP50（kWh，宽表） | 与价格窗口重叠的月 CSV |
 
 文件来自 Electricity Authority EMI 的 Azure blob。在 Windows 上下载；**不要**从 Databricks Free Edition 计算里直接拉网（出网有白名单）。上传到 Unity Catalog Volume 后再跑流水线。
 
@@ -132,18 +143,21 @@ v1 使用半小时粒度的 **FinalEnergyPrices**（最近 90 个日文件）和
 Lakeflow Job `EMI daily refresh`  （每天 07:00 Pacific/Auckland；不拉 EMI）
 ```
 
-第一次 workspace 跑通后的 Lakeflow 图（Auto Loader 读 CSV，再接 streaming table 与 materialized view）：
+Lakeflow 图（Auto Loader 读 CSV，再接 streaming table 与 materialized view）。下面 workspace DAG 截图是第一次只跑价格时的成功运行；发电表要等 Volume 上传后再进图。
 
 ```mermaid
 flowchart LR
   nspCsv["Volume NSP CSV"] --> nspRaw["bronze.network_supply_points_raw"]
   priceCsv["Volume prices CSV"] --> priceRaw["bronze.final_energy_prices_raw"]
+  genCsv["Volume Generation_MD CSV"] --> genRaw["bronze.generation_md_raw"]
   nspRaw --> nspCur["silver.nsp_current"]
   priceRaw --> prices["silver.prices"]
   nspCur --> loc["silver.prices_with_location"]
   prices --> loc
   loc --> daily["gold.weekday_evening_node_prices"]
   daily --> ranked["gold.evening_spike_ranked"]
+  genRaw --> genPer["silver.generation_periods"]
+  genPer --> fuelMix["gold.weekday_evening_fuel_mix"]
 ```
 
 第一次成功跑通后的 workspace DAG：
@@ -161,6 +175,8 @@ AI/BI 页面 `Weekday evening spikes`：按晚间/日间均价比的前 20 名�
 公开约定的 catalog / schema 是 `nz_energy.bronze|silver|gold`。个人 workspace 里带邮箱前缀的 catalog 只写未跟踪的 `AGENTS.local.md`。流水线 SQL 与在 workspace 里怎么建，见 `src/pipeline/README.md`。Bundle 合同在根 `databricks.yml` 和 `resources/`。
 
 v1 Gold 粒度：工作日日期 × 节点；晚间均价（TradingPeriod ≥ 35，17:00）对比日间均价（TP 15–34）。排序表是 `nz_energy.gold.evening_spike_ranked`。看板用这张排名，外加 Waitaki 节点 `WTK0111` 的按日序列。
+
+发电 Gold 粒度：工作日日期 × EMI `Fuel_Code`；晚间 kWh 份额对比日间份额。表是 `nz_energy.gold.weekday_evening_fuel_mix`。`Hydro` 与 `HYD` 等标签保持 EMI 原样。
 
 ### 开发说明
 
