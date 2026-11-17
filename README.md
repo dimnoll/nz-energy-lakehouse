@@ -4,7 +4,7 @@
 
 Personal Databricks data-engineering project: New Zealand wholesale electricity prices, landed on a laptop, stored as Delta in Unity Catalog, and shaped through a Bronze / Silver / Gold pipeline.
 
-**Status:** local EMI lander works (`src/land/download_emi.py`). One Lakeflow pipeline in `src/pipeline/` has been run in the workspace (Bronze / Silver / Gold). Gold ranks were reviewed. CSV cache stays in `data/landing/` and is gitignored. AI/BI dashboard is next.
+**Status:** local EMI lander works (`src/land/download_emi.py`). One Lakeflow pipeline in `src/pipeline/` has been run (Bronze / Silver / Gold). An AI/BI dashboard reads the Gold tables. CSV cache stays in `data/landing/` and is gitignored.
 
 ---
 
@@ -37,7 +37,7 @@ Raw CSVs are not committed. See `data/landing/` (gitignored contents).
 Windows lander  →  UC Volume  →  nz_energy.bronze
                               →  nz_energy.silver   (types, expectations)
                               →  nz_energy.gold     (weekday evening-peak KPIs)
-                              →  AI/BI dashboard (later)
+                              →  AI/BI dashboard
 ```
 
 Lakeflow graph after the first workspace run (Auto Loader CSV sources, then streaming tables and materialized views):
@@ -58,17 +58,21 @@ Workspace DAG after the first successful run:
 
 ![Lakeflow pipeline DAG after the first successful workspace run](docs/lakeflow-pipeline-dag.png)
 
+AI/BI page `Weekday evening spikes`: top 20 nodes by mean evening/daytime ratio, plus the daily series for `WTK0111`. A few extreme days lift the window mean; typical days sit much lower.
+
+![AI/BI dashboard: top 20 evening/daytime ratios and WTK0111 daily series](docs/ai-bi-weekday-evening-spikes.png)
+
 | Path | Role |
 | --- | --- |
 | `src/land/` | Local EMI download (`download_emi.py`). Volume upload is still manual. |
 | `src/pipeline/` | Lakeflow / Spark Declarative Pipelines SQL (`01_bronze.sql` → `03_gold.sql`). Workspace run notes: `src/pipeline/README.md`. |
 | `resources/` | Declarative Automation Bundles YAML (later) |
-| `docs/` | Pipeline DAG screenshot; dashboard screenshots later |
+| `docs/` | Pipeline DAG and AI/BI dashboard screenshots |
 | `data/landing/` | Local CSV cache (ignored) |
 
 Catalog/schema names above are the public contract. A personal workspace catalog belongs in untracked `AGENTS.local.md`.
 
-v1 Gold grain: weekday date × node, evening mean (TradingPeriod ≥ 35, 17:00 NZ) versus daytime mean (TP 15–34). Ranked node table is `nz_energy.gold.evening_spike_ranked`. A first run has been reviewed; node-level findings stay in that table until a dashboard screenshot is added.
+v1 Gold grain: weekday date × node, evening mean (TradingPeriod ≥ 35, 17:00 NZ) versus daytime mean (TP 15–34). Ranked node table is `nz_energy.gold.evening_spike_ranked`. The dashboard uses that rank plus the daily series for a Waitaki node (`WTK0111`).
 
 ### Development
 
@@ -87,7 +91,7 @@ This repo is original portfolio work. It is not a copy of Databricks Academy not
 
 个人 Databricks 数据工程项目：新西兰电力批发市场结算电价。CSV 在本机落地，写入 Unity Catalog 的 Delta 表，再走 Bronze / Silver / Gold。
 
-**当前状态：** 本机 EMI 下载脚本已可跑（`src/land/download_emi.py`）。`src/pipeline/` 里那条 Lakeflow 已在 workspace 跑通（Bronze / Silver / Gold），Gold 名次已核对。CSV 缓存在 `data/landing/`，不进 git。下一步是 AI/BI 看板。
+**当前状态：** 本机 EMI 下载脚本已可跑（`src/land/download_emi.py`）。`src/pipeline/` 里那条 Lakeflow 已跑通（Bronze / Silver / Gold）。AI/BI 看板读 Gold 表。CSV 缓存在 `data/landing/`，不进 git。
 
 ### 问题
 
@@ -116,7 +120,7 @@ v1 使用半小时粒度的 **FinalEnergyPrices**（最近 90 个日文件）和
 本机 lander  →  UC Volume  →  nz_energy.bronze
                            →  nz_energy.silver   （类型、质量期望）
                            →  nz_energy.gold     （工作日晚高峰 KPI）
-                           →  AI/BI 看板（后做）
+                           →  AI/BI 看板
 ```
 
 第一次 workspace 跑通后的 Lakeflow 图（Auto Loader 读 CSV，再接 streaming table 与 materialized view）：
@@ -137,9 +141,13 @@ flowchart LR
 
 ![第一次成功跑通后的 Lakeflow pipeline DAG](docs/lakeflow-pipeline-dag.png)
 
+AI/BI 页面 `Weekday evening spikes`：按晚间/日间均价比的前 20 名，以及 `WTK0111` 的按日序列。窗口均值会被少数极端日抬高，多数日子低得多。
+
+![AI/BI 看板：前 20 名晚间/日间比与 WTK0111 按日序列](docs/ai-bi-weekday-evening-spikes.png)
+
 公开约定的 catalog / schema 是 `nz_energy.bronze|silver|gold`。个人 workspace 里带邮箱前缀的 catalog 只写未跟踪的 `AGENTS.local.md`。流水线 SQL 与在 workspace 里怎么建，见 `src/pipeline/README.md`。
 
-v1 Gold 粒度：工作日日期 × 节点；晚间均价（TradingPeriod ≥ 35，17:00）对比日间均价（TP 15–34）。排序表是 `nz_energy.gold.evening_spike_ranked`。第一轮已经核对；节点级结论留在表里，等看板截图再写进 README。
+v1 Gold 粒度：工作日日期 × 节点；晚间均价（TradingPeriod ≥ 35，17:00）对比日间均价（TP 15–34）。排序表是 `nz_energy.gold.evening_spike_ranked`。看板用这张排名，外加 Waitaki 节点 `WTK0111` 的按日序列。
 
 ### 开发说明
 
