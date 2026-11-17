@@ -50,7 +50,7 @@ SELECT * FROM nz_energy.gold.weekday_evening_fuel_mix ORDER BY trading_date, fue
 
 Price Gold uses **final** files only (`is_interim = false`). Evening is TradingPeriod ≥ 35 (17:00). Daytime baseline is TP 15–34 (07:00–16:30), not overnight.
 
-Upload `data/landing/generation-md/` into `/Volumes/nz_energy/bronze/landing/generation-md` before the generation tables can land. Those CSVs are monthly and lag the daily prices; do not put `Fuel_Code` on `evening_spike_ranked`. After a GitHub push, Pull the Git folder, then **Run** this same pipeline (or wait for `EMI daily refresh`). Do not create a second ETL pipeline.
+`data/landing/generation-md/` has been uploaded to `/Volumes/nz_energy/bronze/landing/generation-md` and this same pipeline has been rerun. Those CSVs are monthly and lag the daily prices; do not put `Fuel_Code` on `evening_spike_ranked`. After a later GitHub push: Pull the Git folder, then **Run** this same pipeline (or wait for `EMI daily refresh`). Do not create a second ETL pipeline.
 
 ### Schedule one Job
 
@@ -90,7 +90,7 @@ DROP TABLE IF EXISTS nz_energy.bronze.final_energy_prices_raw;
 
 价格 Gold 只用 final 文件。晚间是 TP ≥ 35（17:00）；日间基线是 TP 15–34（07:00–16:30），不含凌晨。
 
-把 `data/landing/generation-md/` 上传到 `/Volumes/nz_energy/bronze/landing/generation-md` 之后，发电表才会落地。这些是月文件，比日价格晚；不要把 `Fuel_Code` 并进 `evening_spike_ranked`。GitHub 推送后 Pull Git folder，再 **Run 同一条** pipeline（或等 `EMI daily refresh`）。不要另建 ETL pipeline。
+`data/landing/generation-md/` 已上传到 `/Volumes/nz_energy/bronze/landing/generation-md`，同一条 pipeline 已再跑过。这些是月文件，比日价格晚；不要把 `Fuel_Code` 并进 `evening_spike_ranked`。以后 GitHub 推送后：Pull Git folder，再 **Run 同一条** pipeline（或等 `EMI daily refresh`）。不要另建 ETL pipeline。
 
 ### 给现有 pipeline 加一个 Job
 

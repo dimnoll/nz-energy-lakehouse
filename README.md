@@ -4,7 +4,7 @@
 
 Personal Databricks data-engineering project: New Zealand wholesale electricity prices, landed on a laptop, stored as Delta in Unity Catalog, and shaped through a Bronze / Silver / Gold pipeline.
 
-**Status:** local EMI lander works (`src/land/download_emi.py`), including monthly `Generation_MD` files that overlap the price window. One Lakeflow pipeline in `src/pipeline/` has been run for prices (Bronze / Silver / Gold); generation tables are in `04_generation.sql` and still need the Volume upload + a rerun of **that same** pipeline. Lakeflow Job `EMI daily refresh` triggers it on a daily Auckland schedule. An AI/BI dashboard reads the price Gold tables (generation charts are not on that page). A Declarative Automation Bundle (`databricks.yml`) describes that pipeline and Job for `databricks bundle validate`; it is not auto-deployed. CSV cache stays in `data/landing/` and is gitignored.
+**Status:** local EMI lander works (`src/land/download_emi.py`), including monthly `Generation_MD` files that overlap the price window. One Lakeflow pipeline in `src/pipeline/` has been run for prices and generation (Bronze / Silver / Gold). Generation Gold was checked: weekdays in the monthly files, not clipped to the 90-day price start. Lakeflow Job `EMI daily refresh` triggers that pipeline on a daily Auckland schedule. An AI/BI dashboard reads the price Gold tables (generation charts are not on that page). A Declarative Automation Bundle (`databricks.yml`) describes that pipeline and Job for `databricks bundle validate`; it is not auto-deployed. CSV cache stays in `data/landing/` and is gitignored.
 
 ---
 
@@ -86,7 +86,7 @@ Catalog/schema names above are the public contract. A personal workspace catalog
 
 v1 Gold grain: weekday date × node, evening mean (TradingPeriod ≥ 35, 17:00 NZ) versus daytime mean (TP 15–34). Ranked node table is `nz_energy.gold.evening_spike_ranked`. The dashboard uses that rank plus the daily series for a Waitaki node (`WTK0111`).
 
-Generation Gold grain: weekday date × EMI `Fuel_Code`, evening kWh share versus daytime share. Table: `nz_energy.gold.weekday_evening_fuel_mix`. Codes such as `Hydro` and `HYD` are left as EMI labelled them.
+Generation Gold grain: weekday date × EMI `Fuel_Code`, evening kWh share versus daytime share. Table: `nz_energy.gold.weekday_evening_fuel_mix`. Codes such as `Hydro` and `HYD` are left as EMI labelled them. The checked window is weekdays 2026-08-03 to 2026-10-30 (the landed monthly files), which starts earlier than the 90-day price files.
 
 ### Development
 
@@ -107,7 +107,7 @@ This repo is original portfolio work. It is not a copy of Databricks Academy not
 
 个人 Databricks 数据工程项目：新西兰电力批发市场结算电价。CSV 在本机落地，写入 Unity Catalog 的 Delta 表，再走 Bronze / Silver / Gold。
 
-**当前状态：** 本机 EMI 下载脚本已可跑（`src/land/download_emi.py`），也包括与价格窗口重叠的 `Generation_MD` 月文件。`src/pipeline/` 里那条 Lakeflow 已跑通价格的 Bronze / Silver / Gold；发电表在 `04_generation.sql`，还要把 Volume 上传后再 **Run 同一条** pipeline。Lakeflow Job `EMI daily refresh` 按奥克兰时间每天触发。AI/BI 看板读价格 Gold（发电图不在那一页）。根目录 `databricks.yml` 用 Declarative Automation Bundles 描述这条 pipeline 和 Job，供 `databricks bundle validate`；不会一 push 就部署。CSV 缓存在 `data/landing/`，不进 git。
+**当前状态：** 本机 EMI 下载脚本已可跑（`src/land/download_emi.py`），也包括与价格窗口重叠的 `Generation_MD` 月文件。`src/pipeline/` 里那条 Lakeflow 已跑通价格和发电的 Bronze / Silver / Gold。发电 Gold 已核对：窗口是月文件里的工作日，没有裁成价格那 90 天的起点。Lakeflow Job `EMI daily refresh` 按奥克兰时间每天触发。AI/BI 看板读价格 Gold（发电图不在那一页）。根目录 `databricks.yml` 用 Declarative Automation Bundles 描述这条 pipeline 和 Job，供 `databricks bundle validate`；不会一 push 就部署。CSV 缓存在 `data/landing/`，不进 git。
 
 ### 问题
 
@@ -176,7 +176,7 @@ AI/BI 页面 `Weekday evening spikes`：按晚间/日间均价比的前 20 名�
 
 v1 Gold 粒度：工作日日期 × 节点；晚间均价（TradingPeriod ≥ 35，17:00）对比日间均价（TP 15–34）。排序表是 `nz_energy.gold.evening_spike_ranked`。看板用这张排名，外加 Waitaki 节点 `WTK0111` 的按日序列。
 
-发电 Gold 粒度：工作日日期 × EMI `Fuel_Code`；晚间 kWh 份额对比日间份额。表是 `nz_energy.gold.weekday_evening_fuel_mix`。`Hydro` 与 `HYD` 等标签保持 EMI 原样。
+发电 Gold 粒度：工作日日期 × EMI `Fuel_Code`；晚间 kWh 份额对比日间份额。表是 `nz_energy.gold.weekday_evening_fuel_mix`。`Hydro` 与 `HYD` 等标签保持 EMI 原样。已核对窗口是 2026-08-03 至 2026-10-30 的工作日（落地的月文件），比价格 90 天窗口更早起算。
 
 ### 开发说明
 
