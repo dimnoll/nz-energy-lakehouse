@@ -4,7 +4,7 @@
 
 Personal Databricks data-engineering project: New Zealand wholesale electricity prices, landed on a laptop, stored as Delta in Unity Catalog, and shaped through a Bronze / Silver / Gold pipeline.
 
-**Status:** local EMI lander works (`src/land/download_emi.py`). One Lakeflow pipeline in `src/pipeline/` has been run (Bronze / Silver / Gold). An AI/BI dashboard reads the Gold tables. CSV cache stays in `data/landing/` and is gitignored.
+**Status:** local EMI lander works (`src/land/download_emi.py`). One Lakeflow pipeline in `src/pipeline/` has been run (Bronze / Silver / Gold). Lakeflow Job `EMI daily refresh` triggers that pipeline on a daily Auckland schedule. An AI/BI dashboard reads the Gold tables. CSV cache stays in `data/landing/` and is gitignored.
 
 ---
 
@@ -38,6 +38,7 @@ Windows lander  →  UC Volume  →  nz_energy.bronze
                               →  nz_energy.silver   (types, expectations)
                               →  nz_energy.gold     (weekday evening-peak KPIs)
                               →  AI/BI dashboard
+Lakeflow Job `EMI daily refresh`  (daily 07:00 Pacific/Auckland; does not fetch EMI)
 ```
 
 Lakeflow graph after the first workspace run (Auto Loader CSV sources, then streaming tables and materialized views):
@@ -58,6 +59,10 @@ Workspace DAG after the first successful run:
 
 ![Lakeflow pipeline DAG after the first successful workspace run](docs/lakeflow-pipeline-dag.png)
 
+Lakeflow Job `EMI daily refresh` wraps that pipeline (one pipeline task). It is scheduled daily at 07:00 `Pacific/Auckland`. The screenshot is a manual run that succeeded; Databricks compute still does not fetch EMI, and Volume upload stays manual.
+
+![Lakeflow Job EMI daily refresh: one successful pipeline-task run](docs/lakeflow-job-emi-daily-refresh.png)
+
 AI/BI page `Weekday evening spikes`: top 20 nodes by mean evening/daytime ratio, plus the daily series for `WTK0111`. A few extreme days lift the window mean; typical days sit much lower.
 
 ![AI/BI dashboard: top 20 evening/daytime ratios and WTK0111 daily series](docs/ai-bi-weekday-evening-spikes.png)
@@ -67,7 +72,7 @@ AI/BI page `Weekday evening spikes`: top 20 nodes by mean evening/daytime ratio,
 | `src/land/` | Local EMI download (`download_emi.py`). Volume upload is still manual. |
 | `src/pipeline/` | Lakeflow / Spark Declarative Pipelines SQL (`01_bronze.sql` → `03_gold.sql`). Workspace run notes: `src/pipeline/README.md`. |
 | `resources/` | Declarative Automation Bundles YAML (later) |
-| `docs/` | Pipeline DAG and AI/BI dashboard screenshots |
+| `docs/` | Pipeline DAG, Job run, and AI/BI dashboard screenshots |
 | `data/landing/` | Local CSV cache (ignored) |
 
 Catalog/schema names above are the public contract. A personal workspace catalog belongs in untracked `AGENTS.local.md`.
@@ -91,7 +96,7 @@ This repo is original portfolio work. It is not a copy of Databricks Academy not
 
 个人 Databricks 数据工程项目：新西兰电力批发市场结算电价。CSV 在本机落地，写入 Unity Catalog 的 Delta 表，再走 Bronze / Silver / Gold。
 
-**当前状态：** 本机 EMI 下载脚本已可跑（`src/land/download_emi.py`）。`src/pipeline/` 里那条 Lakeflow 已跑通（Bronze / Silver / Gold）。AI/BI 看板读 Gold 表。CSV 缓存在 `data/landing/`，不进 git。
+**当前状态：** 本机 EMI 下载脚本已可跑（`src/land/download_emi.py`）。`src/pipeline/` 里那条 Lakeflow 已跑通（Bronze / Silver / Gold）。Lakeflow Job `EMI daily refresh` 按奥克兰时间每天触发这条 pipeline。AI/BI 看板读 Gold 表。CSV 缓存在 `data/landing/`，不进 git。
 
 ### 问题
 
@@ -121,6 +126,7 @@ v1 使用半小时粒度的 **FinalEnergyPrices**（最近 90 个日文件）和
                            →  nz_energy.silver   （类型、质量期望）
                            →  nz_energy.gold     （工作日晚高峰 KPI）
                            →  AI/BI 看板
+Lakeflow Job `EMI daily refresh`  （每天 07:00 Pacific/Auckland；不拉 EMI）
 ```
 
 第一次 workspace 跑通后的 Lakeflow 图（Auto Loader 读 CSV，再接 streaming table 与 materialized view）：
@@ -140,6 +146,10 @@ flowchart LR
 第一次成功跑通后的 workspace DAG：
 
 ![第一次成功跑通后的 Lakeflow pipeline DAG](docs/lakeflow-pipeline-dag.png)
+
+Lakeflow Job `EMI daily refresh` 包着这条 pipeline（一个 pipeline task），按 `Pacific/Auckland` 每天 07:00 触发。截图是一次手动 Run 成功；计算端仍不拉 EMI，Volume 上传仍是人工。
+
+![Lakeflow Job EMI daily refresh：一次成功的 pipeline-task 运行](docs/lakeflow-job-emi-daily-refresh.png)
 
 AI/BI 页面 `Weekday evening spikes`：按晚间/日间均价比的前 20 名，以及 `WTK0111` 的按日序列。窗口均值会被少数极端日抬高，多数日子低得多。
 

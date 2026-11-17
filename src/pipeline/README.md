@@ -48,6 +48,10 @@ SELECT * FROM nz_energy.gold.evening_spike_ranked ORDER BY spike_rank LIMIT 20;
 
 Gold uses **final** files only (`is_interim = false`). Evening is TradingPeriod ≥ 35 (17:00). Daytime baseline is TP 15–34 (07:00–16:30), not overnight.
 
+### Schedule one Job
+
+On the same pipeline page, **Schedule**. Trigger type **Scheduled**, every day 07:00, timezone **Pacific/Auckland**, job name `EMI daily refresh`. Leave Performance optimized off. Do not turn on full refresh on the pipeline task. **Run now** once to confirm the job has a single pipeline task pointing at this pipeline — not a notebook, and not a second ETL pipeline. The job does not download EMI; Volume upload stays manual.
+
 If `databricks fs ls dbfs:/Volumes/nz_energy/bronze/landing` fails, fix the local CLI token before debugging the SQL.
 
 ---
@@ -79,3 +83,7 @@ DROP TABLE IF EXISTS nz_energy.bronze.final_energy_prices_raw;
 6. 再 **Run** 这条 ETL pipeline。再用 SQL 看 Gold。
 
 Gold 只用 final 文件。晚间是 TP ≥ 35（17:00）；日间基线是 TP 15–34（07:00–16:30），不含凌晨。
+
+### 给现有 pipeline 加一个 Job
+
+在同一条 pipeline 页点 **Schedule**。Trigger type **Scheduled**，每天 07:00，时区 **Pacific/Auckland**，Job 名 `EMI daily refresh`。Performance optimized 关掉。不要在 pipeline task 上开 full refresh。再 **Run now** 一次，确认这个 Job 只有一个 pipeline task、指向本 pipeline——不是 notebook，也不是第二条 ETL pipeline。Job 不下载 EMI；Volume 上传仍是人工。
