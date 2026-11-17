@@ -1,4 +1,4 @@
-"""Download v1 EMI CSVs onto this machine. Do not run this from Databricks compute."""
+"""Download EMI CSVs onto this machine. Do not run this from Databricks compute."""
 
 from __future__ import annotations
 
@@ -18,10 +18,12 @@ ACCOUNT = "https://emidatasets.blob.core.windows.net/publicdata"
 SAS = "sv=2021-10-04&si=publicdata&sr=c&sig=f034UWz1xmMbk89jd76zY0M%2BwycFDhhumejUrjqlfIw%3D"
 PRICES_PREFIX = "Datasets/Wholesale/DispatchAndPricing/FinalEnergyPrices/"
 NSP_PREFIX = "Datasets/Wholesale/MappingsAndGeospatial/NetworkSupplyPointsTable/"
+GEN_PREFIX = "Datasets/Wholesale/Generation/Generation_MD/"
 PRICE_NAME = re.compile(
     r"^(?P<ymd>\d{8})_FinalEnergyPrices(?P<interim>_I)?\.csv$"
 )
 NSP_NAME = re.compile(r"^(?P<ymd>\d{8})_NetworkSupplyPointsTable\.csv$")
+GEN_NAME = re.compile(r"^(?P<ym>\d{6})_Generation_MD\.csv$")
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LANDING = REPO_ROOT / "data" / "landing"
 
@@ -102,6 +104,16 @@ def pick_latest_nsp(blobs: list[Blob]) -> Blob:
     return dated[-1][1]
 
 
+def pick_generation_months(blobs: list[Blob], year_months: list[str]) -> list[Blob]:
+    """Monthly Generation_MD files that overlap the price window. Missing months are skipped (EMI lags)."""
+    by_ym: dict[str, Blob] = {}
+    for blob in blobs:
+        match = GEN_NAME.match(blob.filename)
+        if match:
+            by_ym[match.group("ym")] = blob
+    return [by_ym[ym] for ym in year_months if ym in by_ym]
+
+
 def download(blob: Blob, dest_dir: Path) -> Path:
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / blob.filename
@@ -147,25 +159,47 @@ def main() -> int:
         raise SystemExit("No FinalEnergyPrices daily files found for the requested window.")
 
     nsp = pick_latest_nsp(list_blobs(NSP_PREFIX))
+    price_months = sorted({blob.filename[:6] for blob in prices})
+    generation = pick_generation_months(list_blobs(GEN_PREFIX), price_months)
+    if not generation:
+        raise SystemExit(
+            "No Generation_MD monthly files overlap the price window. "
+            "EMI publishes these about a month late."
+        )
 
     price_dir = LANDING / "final-energy-prices"
     nsp_dir = LANDING / "network-supply-points"
+    gen_dir = LANDING / "generation-md"
     for blob in prices:
         download(blob, price_dir)
     nsp_path = download(nsp, nsp_dir)
+    for blob in generation:
+        download(blob, gen_dir)
 
     first = price_dir / prices[0].filename
     last = price_dir / prices[-1].filename
+    missing_gen = [ym for ym in price_months if ym not in {blob.filename[:6] for blob in generation}]
     print()
     print(f"prices {len(prices)} files: {prices[0].filename} .. {prices[-1].filename}")
     print(f"nsp    {nsp.filename}")
+    print(
+        f"gen    {len(generation)} monthly files: "
+        f"{generation[0].filename} .. {generation[-1].filename}"
+    )
     print(f"header prices: {peek_header(first)}")
     print(f"header nsp:    {peek_header(nsp_path)}")
+    print(f"header gen:    {peek_header(gen_dir / generation[0].filename)}")
     if last != first:
         print(f"header last:   {peek_header(last)}")
     interim = sum(1 for blob in prices if blob.filename.endswith("_I.csv"))
     if interim:
         print(f"note   {interim} day(s) still interim (_I); finals replace these later.")
+    if missing_gen:
+        print(
+            "note   no Generation_MD yet for "
+            + ", ".join(missing_gen)
+            + " (monthly files lag the daily prices)."
+        )
     return 0
 
 
