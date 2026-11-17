@@ -1,0 +1,14 @@
+# Matches the workspace pipeline "EMI Lakeflow Pipeline"
+# (id 33e9efb4-a6fe-4624-8926-7ce8edefe2fa). SQL uses fully qualified
+# nz_energy.bronze|silver|gold names, so this file does not set a default schema.
+# Bind before deploy: databricks bundle deployment bind emi_lakeflow <pipeline-id>
+
+resources:
+  pipelines:
+    emi_lakeflow:
+      name: EMI Lakeflow Pipeline
+      catalog: nz_energy
+      serverless: true
+      libraries:
+        - glob:
+            include: ../src/pipeline/*.sql

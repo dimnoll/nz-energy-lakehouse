@@ -2,5 +2,6 @@
 
 - Python: e.g. F:\Env\py312-general\python.exe
 - Databricks workspace URL:
+- Databricks CLI profile (for `databricks bundle validate`; do not commit `.databrickscfg`)
 - Personal catalog (if not nz_energy):
 - Volume path for landing:

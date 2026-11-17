@@ -4,7 +4,7 @@
 
 Personal Databricks data-engineering project: New Zealand wholesale electricity prices, landed on a laptop, stored as Delta in Unity Catalog, and shaped through a Bronze / Silver / Gold pipeline.
 
-**Status:** local EMI lander works (`src/land/download_emi.py`). One Lakeflow pipeline in `src/pipeline/` has been run (Bronze / Silver / Gold). Lakeflow Job `EMI daily refresh` triggers that pipeline on a daily Auckland schedule. An AI/BI dashboard reads the Gold tables. CSV cache stays in `data/landing/` and is gitignored.
+**Status:** local EMI lander works (`src/land/download_emi.py`). One Lakeflow pipeline in `src/pipeline/` has been run (Bronze / Silver / Gold). Lakeflow Job `EMI daily refresh` triggers that pipeline on a daily Auckland schedule. An AI/BI dashboard reads the Gold tables. A Declarative Automation Bundle (`databricks.yml`) describes that pipeline and Job for `databricks bundle validate`; it is not auto-deployed. CSV cache stays in `data/landing/` and is gitignored.
 
 ---
 
@@ -71,7 +71,8 @@ AI/BI page `Weekday evening spikes`: top 20 nodes by mean evening/daytime ratio,
 | --- | --- |
 | `src/land/` | Local EMI download (`download_emi.py`). Volume upload is still manual. |
 | `src/pipeline/` | Lakeflow / Spark Declarative Pipelines SQL (`01_bronze.sql` → `03_gold.sql`). Workspace run notes: `src/pipeline/README.md`. |
-| `resources/` | Declarative Automation Bundles YAML (later) |
+| `databricks.yml` | Bundle identity and the single `workspace` target. Host/token stay in the local CLI profile. |
+| `resources/` | Pipeline and Job YAML (`emi_lakeflow.pipeline.yml`, `emi_daily_refresh.job.yml`). |
 | `docs/` | Pipeline DAG, Job run, and AI/BI dashboard screenshots |
 | `data/landing/` | Local CSV cache (ignored) |
 
@@ -80,6 +81,8 @@ Catalog/schema names above are the public contract. A personal workspace catalog
 v1 Gold grain: weekday date × node, evening mean (TradingPeriod ≥ 35, 17:00 NZ) versus daytime mean (TP 15–34). Ranked node table is `nz_energy.gold.evening_spike_ranked`. The dashboard uses that rank plus the daily series for a Waitaki node (`WTK0111`).
 
 ### Development
+
+From the repo root, `databricks bundle validate` checks the bundle against the local CLI profile. Do **not** `databricks bundle deploy` unless those YAML resources are bound to the existing workspace pipeline and Job. An unbound deploy can create a second ETL pipeline. Databricks compute still does not fetch EMI.
 
 Code and docs in this repository are written in Cursor. Design choices, data-quality rules, and any published insights are reviewed before they count as the project’s conclusions. Git commits are authored by the repository owner; they are not machine-attributed.
 
@@ -96,7 +99,7 @@ This repo is original portfolio work. It is not a copy of Databricks Academy not
 
 个人 Databricks 数据工程项目：新西兰电力批发市场结算电价。CSV 在本机落地，写入 Unity Catalog 的 Delta 表，再走 Bronze / Silver / Gold。
 
-**当前状态：** 本机 EMI 下载脚本已可跑（`src/land/download_emi.py`）。`src/pipeline/` 里那条 Lakeflow 已跑通（Bronze / Silver / Gold）。Lakeflow Job `EMI daily refresh` 按奥克兰时间每天触发这条 pipeline。AI/BI 看板读 Gold 表。CSV 缓存在 `data/landing/`，不进 git。
+**当前状态：** 本机 EMI 下载脚本已可跑（`src/land/download_emi.py`）。`src/pipeline/` 里那条 Lakeflow 已跑通（Bronze / Silver / Gold）。Lakeflow Job `EMI daily refresh` 按奥克兰时间每天触发这条 pipeline。AI/BI 看板读 Gold 表。根目录 `databricks.yml` 用 Declarative Automation Bundles 描述这条 pipeline 和 Job，供 `databricks bundle validate`；不会一 push 就部署。CSV 缓存在 `data/landing/`，不进 git。
 
 ### 问题
 
@@ -155,11 +158,13 @@ AI/BI 页面 `Weekday evening spikes`：按晚间/日间均价比的前 20 名�
 
 ![AI/BI 看板：前 20 名晚间/日间比与 WTK0111 按日序列](docs/ai-bi-weekday-evening-spikes.png)
 
-公开约定的 catalog / schema 是 `nz_energy.bronze|silver|gold`。个人 workspace 里带邮箱前缀的 catalog 只写未跟踪的 `AGENTS.local.md`。流水线 SQL 与在 workspace 里怎么建，见 `src/pipeline/README.md`。
+公开约定的 catalog / schema 是 `nz_energy.bronze|silver|gold`。个人 workspace 里带邮箱前缀的 catalog 只写未跟踪的 `AGENTS.local.md`。流水线 SQL 与在 workspace 里怎么建，见 `src/pipeline/README.md`。Bundle 合同在根 `databricks.yml` 和 `resources/`。
 
 v1 Gold 粒度：工作日日期 × 节点；晚间均价（TradingPeriod ≥ 35，17:00）对比日间均价（TP 15–34）。排序表是 `nz_energy.gold.evening_spike_ranked`。看板用这张排名，外加 Waitaki 节点 `WTK0111` 的按日序列。
 
 ### 开发说明
+
+在仓库根目录跑 `databricks bundle validate`，用本机 CLI profile，不要把 workspace URL 写进 git。**不要** `databricks bundle deploy`，除非 YAML 已经 bind 到现有的 pipeline 和 Job；未 bind 就部署可能另起一条 ETL pipeline。计算端仍不拉 EMI。
 
 本仓库的代码与文档在 Cursor 中编写。架构取舍、数据质量规则、以及对外写出的结论，须经本人核对后才算数。Git 提交作者是仓库所有者，不使用 Cursor 的 commit / PR 署名。
 

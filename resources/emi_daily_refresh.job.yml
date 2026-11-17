@@ -1,0 +1,19 @@
+# Matches the workspace Job "EMI daily refresh": one pipeline task, no full
+# refresh, Standard performance (Performance optimized unchecked in the UI).
+# Bind before deploy: databricks bundle deployment bind emi_daily_refresh <job-id>
+
+resources:
+  jobs:
+    emi_daily_refresh:
+      name: EMI daily refresh
+      max_concurrent_runs: 1
+      performance_target: STANDARD
+      schedule:
+        quartz_cron_expression: "0 0 7 * * ?"
+        timezone_id: Pacific/Auckland
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: refresh_emi_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.emi_lakeflow.id}
+            full_refresh: false

@@ -1,0 +1,21 @@
+# Declarative Automation Bundle for the existing EMI pipeline and daily Job.
+# Validate from this directory: `databricks bundle validate`
+# Do not `databricks bundle deploy` unless the resources are bound to the
+# workspace pipeline/job already created in the UI. A deploy without bind
+# can create a second ETL pipeline (Free Edition allows one active of this type)
+# and fight for table ownership.
+
+bundle:
+  name: nz-energy-lakehouse
+
+include:
+  - resources/*.yml
+
+# Host and token come from the local Databricks CLI profile, not this file.
+sync:
+  exclude:
+    - data/landing/**
+
+targets:
+  workspace:
+    default: true

@@ -10,7 +10,7 @@
 | 合同 | `AGENTS.md` | 目录、硬约束、commit 规则 | 本机 Python 路径、workspace URL、个人 catalog |
 | 本机覆盖 | `AGENTS.local.md` | 本机路径与个人 catalog（gitignore） | 提交进 git |
 | 代码 | `src/land/`、`src/pipeline/` | 本机 lander、Lakeflow 转换 | 从 Free Edition 计算里 `requests` 打 EMI |
-| Bundle | `resources/` | 以后的 `databricks.yml` | 空 YAML 充 CI/CD |
+| Bundle | 根 `databricks.yml` + `resources/*.yml` | 已有 pipeline / Job 的部署合同 | 空 YAML；未 bind 就 `bundle deploy` |
 | 落地缓存 | `data/landing/` | EMI CSV（gitignore 内容） | `git add` CSV |
 | 说明图 | `docs/` | 架构说明、以后的看板截图 | 第三方课程截图或课件 HTML |
 
@@ -21,7 +21,8 @@
 ```text
 src/land/          # Windows：下载 EMI CSV，上传 UC Volume
 src/pipeline/      # Lakeflow / Spark Declarative Pipelines
-resources/         # Declarative Automation Bundles（后做）
+databricks.yml     # Declarative Automation Bundles 根合同
+resources/         # pipeline / Job YAML
 docs/
 data/landing/      # 本地 CSV 缓存（内容 gitignore）
 README.md          # 中英双语门面
@@ -53,6 +54,7 @@ LICENSE            # 代码 MIT
 - 把 EMI CSV、密钥、workspace token 推进 git
 - 在 Databricks 计算里直连任意公网 API / EMI blob
 - 把第三方课程练习改名后当作本仓作品
+- 未对现有 pipeline / Job 做 `bundle deployment bind` 就 `databricks bundle deploy`（会另起一条 ETL pipeline）
 - `git push`、打 tag、对忽略文件 `git add -f`
 - 给 commit 加 Cursor / Copilot 的 `Co-authored-by`
 - 改写历史提交日期
